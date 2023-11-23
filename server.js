@@ -4,7 +4,13 @@ const bodyParser = require('body-parser');
 const app = express(); //Line 2
 const port = process.env.PORT || 5000; //Line 3
 var jsonParser = bodyParser.json();
-var urlencodedParser = bodyParser.urlencoded({ extended: false });
+app.use(jsonParser);
+
+// let multer = require('multer');
+// app.use(multer().none());
+var urlencodedParser = bodyParser.urlencoded({ extended: true });
+
+app.use(urlencodedParser);
 
 const { MongoClient, ServerApiVersion } = require('mongodb');
 
@@ -72,13 +78,17 @@ app.post('/addsong', jsonParser, (req, res) => {
 app.post('/login', jsonParser, (req, res) => { //Line 9
 
   console.log(req.body);
-  login = req.body.login;
+  
+  login = req.body.userName;
   password = req.body.password;
 
+  console.log(login + " " + password);
   if (login == 'dsalamon' && password == '123') {
-    res.send({ userName: 'DSalamon', isLogged: true });
+    console.log("Logged!");
+    res.send({ userName: 'DSalamon', isLogged: true});
   }
   else {
+    console.log("Not logged!");
     res.send({ userName: 'DSalamon', isLogged: false });
   }
 

@@ -30,10 +30,11 @@ state = {
   render() {
     return (
       <div className="App">
-        <Top></Top>
         <p className="App-title">{this.state.title}</p>
         <p className="App-desc">{this.state.desc}</p>
-        <Player></Player>
+        {sessionStorage.getItem("isLogged") && <div><Top></Top><Player></Player></div>}
+        {!sessionStorage.getItem("isLogged") && <div><Top></Top><Player></Player></div>}
+
       </div>
     );
   }
