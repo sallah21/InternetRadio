@@ -3,25 +3,20 @@ const express = require('express'); //Line 1
 const bodyParser = require('body-parser');
 const app = express(); //Line 2
 const port = process.env.PORT || 5000; //Line 3
+
+const fetchfile = require('./fetchFile');
 var jsonParser = bodyParser.json();
 app.use(jsonParser);
 
-// let multer = require('multer');
-// app.use(multer().none());
+
+
 var urlencodedParser = bodyParser.urlencoded({ extended: true });
 
 app.use(urlencodedParser);
 
 const { MongoClient, ServerApiVersion } = require('mongodb');
 
-const client = new MongoClient(process.env.MONGODB_URI, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  }
-});
-
+const client = new MongoClient(process.env.MONGODB_URI);
 
 // This displays message that the server running and listening to specified port
 app.listen(port, () => {
@@ -30,18 +25,44 @@ app.listen(port, () => {
 }); //Line 6
 
 async function run() {
-  // try {
-  //   // Connect the client to the server	(optional starting in v4.7)
-  //   await client.connect();
-  //   // Send a ping to confirm a successful connection
-  //   await client.db("songs").command({ ping: 1 });
-  //   console.log("Pinged your deployment. You successfully connected to MongoDB!");
-  // } finally {
-  //   // Ensures that the client will close when you finish/error
-  //   // await client.close();
-  // }
+  var data
+  try {
+    // Connect the client to the server	(optional starting in v4.7)
+    client.connect();
+    console.log("connected");
+    const db = client.db("music")
+    const songs = db.collection("songs")
+    const query = { songName: "STARGAZING" }
+    const options = {
+      sort: { "songAuthor": 1 },
+      projection: { _id: 0, songName: 1, songAuthor: 1, songAlbumName: 1, songAlbumCover: 0, songData: 0 }
+    }
+    console.log("sending querry");
+    data = await songs.findOne(query);
+    console.log("printing data");
+    console.log(data);
+  } finally {
+    // Ensures that the client will close when you finish/error
+    await client.close();
+    return data;
+  }
 }
 
+app.get('/bucket_test', function (req, res, next) {
+  // TODO file fetch access denied 
+    try{
+      fetchfile.getFileFromS3().then(res => {
+        console.log("output ", res);
+        res.send("S3 succ");
+      }).catch( (err) => {
+        console.log("error1". err);
+        res.send(err.message)
+      });
+    } catch (err){
+      console.log("error2". err.message);
+      res.send(err.message);
+    }
+})
 // create a GET route
 app.get('/express_backend', (req, res) => { //Line 9
   res.send({ express: 'Internet Radio Salamon' }); //Line 10
@@ -51,8 +72,10 @@ app.get('/data', (req, res) => { //Line 9
 }); //Line 11)
 
 
-app.get('/music', (req, res) => { //Line 9
-
+app.get('/getallsongs', async (req, res) => { //Line 9
+  const data = await run().catch(console.dir)
+  console.log("res data" + data)
+  res.send({ result: data });
 }); //Line 11)
 
 app.post('/addsong', jsonParser, (req, res) => {
@@ -61,35 +84,24 @@ app.post('/addsong', jsonParser, (req, res) => {
   songAuthor = req.body.songAuthor;
   songAlbum = req.body.songAlbum;
   songAuthor = req.body.songAuthor;
-  
-  // try {
-  //   // Connect the client to the server	(optional starting in v4.7)
-  //   await client.connect();
-  //   // Send a ping to confirm a successful connection
-  //   await client.db("songs").command({ ping: 1 });
-  //   console.log("Pinged your deployment. You successfully connected to MongoDB!");
-  // } finally {
-  //   // Ensures that the client will close when you finish/error
-  //   // await client.close();
-  // }
-
 })
 
 app.post('/login', jsonParser, (req, res) => { //Line 9
 
   console.log(req.body);
-  
+
   login = req.body.userName;
   password = req.body.password;
 
   console.log(login + " " + password);
   if (login == 'dsalamon' && password == '123') {
     console.log("Logged!");
-    res.send({ userName: 'DSalamon', isLogged: true});
+    res.send({ userName: 'DSalamon', isLogged: true });
   }
   else {
     console.log("Not logged!");
     res.send({ userName: 'DSalamon', isLogged: false });
   }
+
 
 }); //Line 11)

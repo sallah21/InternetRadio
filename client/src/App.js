@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import './App.css';
 import Top from './Top';
 import Player from './Player';
+import Dashboard from './Dashboard';
 class App extends Component {
 state = {
     data: null,
@@ -32,7 +33,7 @@ state = {
       <div className="App">
         <p className="App-title">{this.state.title}</p>
         <p className="App-desc">{this.state.desc}</p>
-        {sessionStorage.getItem("isLogged") && <div><Top></Top><Player></Player></div>}
+        {sessionStorage.getItem("isLogged") && <div><Top></Top><Player></Player> <Dashboard></Dashboard></div>}
         {!sessionStorage.getItem("isLogged") && <div><Top></Top><Player></Player></div>}
 
       </div>

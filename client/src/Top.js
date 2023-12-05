@@ -39,7 +39,7 @@ class Top extends Component {
             {!sessionStorage.getItem("isLogged") &&
              <div>
                 <p>Niezalogowany</p> 
-                <form onSubmit={(e)=> {e.preventDefault(); this.loginUser({userName: this.state.userName, password:this.state.password})}}> 
+                <form onSubmit={(e)=> { this.loginUser({userName: this.state.userName, password:this.state.password})}}> 
                     <p><input type='text' placeholder='Username' onChange={ (e) => {  this.setState({userName: e.target.value})}}/></p>
                     <p><input type='password' placeholder='Password' onChange={ (e) => {  this.setState({password: e.target.value})}}/> </p>
                     <p><button type='submit'> Log in !</button></p>
