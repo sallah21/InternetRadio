@@ -6,22 +6,32 @@ import axios from 'axios';
 class Dashboard extends Component {
 
     state = {
-        result: []
+        result: [],
+        isMounted: false
     }
 // TODO DS : query all songs for admin  to pick , playlist logic and creating
+
     componentDidMount(){
-        axios.get('/getallsongs').then( async res => {
-            console.log(res.data.result);
-                this.setState({result: [res.data.result]});
-            }
-        );
+        if(!this.state.isMounted){
+            axios.get('/getallsongs').then(  res => {
+                console.log("data res",res.data.result);
+        
+                    this.setState({result: res.data.result});
+                    console.log("STATE AFTER SETSTATE",this.state.result)
+                    this.setState({isMounted: true});
+                }
+            );
+        }
+
     }
     render(){
         return(
             <div>
-            {this.state.result.map((item) => {
+            {this.state.result?.map((item) => {
+
                 console.log("ajtem" +item?.songName)
-               return <Item item={item}></Item>
+               return <Item key={item?.songName} item={item}></Item>
+               
             })}
           </div>
         );
@@ -31,10 +41,7 @@ class Dashboard extends Component {
 const Item =  ({ item }) => {
     return (
       <div>
-        <h1>{item?.songName}</h1>
-        <p>{item?.songAuthor}</p>
-
-        
+        <p> <a className='songName'>{item?.songName}</a> <a className='songAuthor'>{item?.songAuthor}</a> <button>Add to queue</button></p>
       </div>
     );
   };

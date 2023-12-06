@@ -17,7 +17,6 @@ class Track extends Component {
                     throw Error(res.message) ;
                 }
                 
-                //this.setState({isLogged:res.data.isLogged, userName:res.data.userName});
              }
         );
     

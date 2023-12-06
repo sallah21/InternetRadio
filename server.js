@@ -32,27 +32,33 @@ async function run() {
     console.log("connected");
     const db = client.db("music")
     const songs = db.collection("songs")
-    const query = { songName: "STARGAZING" }
+    const query = { }
     const options = {
       sort: { "songAuthor": 1 },
       projection: { _id: 0, songName: 1, songAuthor: 1, songAlbumName: 1, songAlbumCover: 0, songData: 0 }
     }
     console.log("sending querry");
-    data = await songs.findOne(query);
-    console.log("printing data");
-    console.log(data);
+    // data = await songs.find(query).toArray();
+    data = await songs.find().toArray(function (err, docs) {
+      if(err){
+        return res.send('error', err);
+      }
+      client.close();
+      console.log(docs)
+      return data;
+    });
+
   } finally {
     // Ensures that the client will close when you finish/error
-    await client.close();
+    
     return data;
   }
 }
 
-app.get('/bucket_test', function (req, res, next) {
-  // TODO file fetch access denied 
+app.get('/bucket_test', function (req, res) {
     try{
-      fetchfile.getFileFromS3().then(res => {
-        console.log("output ", res);
+      fetchfile.getFileFromS3().then(data => {
+        console.log("output ", data);
         res.send("S3 succ");
       }).catch( (err) => {
         console.log("error1". err);
@@ -67,6 +73,7 @@ app.get('/bucket_test', function (req, res, next) {
 app.get('/express_backend', (req, res) => { //Line 9
   res.send({ express: 'Internet Radio Salamon' }); //Line 10
 }); //Line 11
+
 app.get('/data', (req, res) => { //Line 9
   res.send({ title: 'Internet Radio Salamon', desc: 'Internetowe radio Dawida Salamona ' })
 }); //Line 11)
@@ -74,7 +81,7 @@ app.get('/data', (req, res) => { //Line 9
 
 app.get('/getallsongs', async (req, res) => { //Line 9
   const data = await run().catch(console.dir)
-  console.log("res data" + data)
+  // console.log("res data" + data)
   res.send({ result: data });
 }); //Line 11)
 

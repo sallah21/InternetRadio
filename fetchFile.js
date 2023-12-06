@@ -14,13 +14,13 @@ AWS.config.update({
 })
 const S3 = new AWS.S3();
 module.exports = {
-    getFileFromS3: () => {
+    getFileFromS3: (bucketName, objectKey) => {
 
       return new Promise( (resolve,reject) => {
   
         try {
-          const bucketName ='salamonradiosongsbucket';
-          const objectKey = '01. STARGAZING.mp3';
+          const bucketName =bucketName;
+          const objectKey =objectKey;
           S3.getObject({
             Bucket : bucketName,
             Key: objectKey

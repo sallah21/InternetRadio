@@ -33,7 +33,7 @@ state = {
       <div className="App">
         <p className="App-title">{this.state.title}</p>
         <p className="App-desc">{this.state.desc}</p>
-        {sessionStorage.getItem("isLogged") && <div><Top></Top><Player></Player> <Dashboard></Dashboard></div>}
+        {sessionStorage.getItem("isLogged") && <div><Top></Top><Player></Player> <Dashboard/></div>}
         {!sessionStorage.getItem("isLogged") && <div><Top></Top><Player></Player></div>}
 
       </div>
