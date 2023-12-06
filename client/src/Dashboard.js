@@ -2,14 +2,23 @@
 import React, { Component } from 'react';
 import axios from 'axios';
 
-  
+  // TODO DS : playlist logic and creating
+  function addToQueue(songData, songCover) {
+    try {
+        axios.post('/add_song_to_queue', [songData,songCover]).then( (res) => {
+            console.log("add song to queue :", res)
+        });
+    } catch (e){
+        console.log("post error", e);
+    }
+}
 class Dashboard extends Component {
 
     state = {
         result: [],
         isMounted: false
     }
-// TODO DS : query all songs for admin  to pick , playlist logic and creating
+
 
     componentDidMount(){
         if(!this.state.isMounted){
@@ -41,7 +50,7 @@ class Dashboard extends Component {
 const Item =  ({ item }) => {
     return (
       <div>
-        <p> <a className='songName'>{item?.songName}</a> <a className='songAuthor'>{item?.songAuthor}</a> <button>Add to queue</button></p>
+        <p> <a className='songName'>{item?.songName}</a> <a className='songAuthor'>{item?.songAuthor}</a> <button onClick={() =>addToQueue(item.songData, item.songAlbumCover)}>Add to queue</button></p>
       </div>
     );
   };

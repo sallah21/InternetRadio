@@ -8,7 +8,8 @@ const fetchfile = require('./fetchFile');
 var jsonParser = bodyParser.json();
 app.use(jsonParser);
 
-
+var songsQueue = [];
+var coverQueue = [];
 
 var urlencodedParser = bodyParser.urlencoded({ extended: true });
 
@@ -55,6 +56,19 @@ async function run() {
   }
 }
 
+async function play(){
+  
+}
+
+app.post('/add_song_to_queue', function (req, res) {
+    // TODO DS: maybe set max length of queue
+    songsQueue.push(req.body[0]);
+    coverQueue.push(req.body[1]);
+    res.sendStatus(200); 
+})
+
+
+
 app.get('/bucket_test', function (req, res) {
     try{
       fetchfile.getFileFromS3().then(data => {
@@ -69,15 +83,16 @@ app.get('/bucket_test', function (req, res) {
       res.send(err.message);
     }
 })
-// create a GET route
+
+
 app.get('/express_backend', (req, res) => { //Line 9
   res.send({ express: 'Internet Radio Salamon' }); //Line 10
 }); //Line 11
 
+
 app.get('/data', (req, res) => { //Line 9
   res.send({ title: 'Internet Radio Salamon', desc: 'Internetowe radio Dawida Salamona ' })
 }); //Line 11)
-
 
 app.get('/getallsongs', async (req, res) => { //Line 9
   const data = await run().catch(console.dir)
