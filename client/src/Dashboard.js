@@ -50,7 +50,7 @@ class Dashboard extends Component {
 const Item =  ({ item }) => {
     return (
       <div>
-        <p> <a className='songName'>{item?.songName}</a> <a className='songAuthor'>{item?.songAuthor}</a> <button onClick={() =>addToQueue(item.songData, item.songAlbumCover)}>Add to queue</button></p>
+        <p> <a className='songName'>{item?.songName}</a> <a className='songAuthor'>{item?.songAuthor}</a> <button onClick={() =>addToQueue(item._id,item.songData, item.songAlbumCover)}>Add to queue</button></p>
       </div>
     );
   };

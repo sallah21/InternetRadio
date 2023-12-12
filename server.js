@@ -7,17 +7,27 @@ const port = process.env.PORT || 5000; //Line 3
 const fetchfile = require('./fetchFile');
 var jsonParser = bodyParser.json();
 app.use(jsonParser);
-
-var songsQueue = [];
-var coverQueue = [];
-
 var urlencodedParser = bodyParser.urlencoded({ extended: true });
 
 app.use(urlencodedParser);
-
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ObjectId } = require('mongodb');
 
 const client = new MongoClient(process.env.MONGODB_URI);
+
+var Buffer = require('buffer/').Buffer
+
+var songIdQueue = []
+var songsQueue = [];
+var coverQueue = [];
+var isPlaying = false;
+
+var currentSongId;
+var currentSongName;
+var currentSongData;
+var currentAlbum;
+var currentAuthor;
+var currentAlbumCover;
+
 
 // This displays message that the server running and listening to specified port
 app.listen(port, () => {
@@ -33,7 +43,7 @@ async function run() {
     console.log("connected");
     const db = client.db("music")
     const songs = db.collection("songs")
-    const query = { }
+    const query = {}
     const options = {
       sort: { "songAuthor": 1 },
       projection: { _id: 0, songName: 1, songAuthor: 1, songAlbumName: 1, songAlbumCover: 0, songData: 0 }
@@ -41,7 +51,7 @@ async function run() {
     console.log("sending querry");
     // data = await songs.find(query).toArray();
     data = await songs.find().toArray(function (err, docs) {
-      if(err){
+      if (err) {
         return res.send('error', err);
       }
       client.close();
@@ -51,43 +61,137 @@ async function run() {
 
   } finally {
     // Ensures that the client will close when you finish/error
-    
+
     return data;
   }
 }
 
-async function play(){
-  
+async function fetchSongData(songId) {
+  var data
+  try {
+    // Connect the client to the server	(optional starting in v4.7)
+    client.connect();
+    console.log("connected");
+    const db = client.db("music");
+    const songs = db.collection("songs");
+
+    const id = new ObjectId(songId);
+
+    const query = { _id: id }
+    // const options = {
+    //   sort: { "_id": 1 },
+    //   projection: { _id: 0, songName: 1, songAuthor: 1, songAlbumName: 1, songAlbumCover: 0, songData: 0 }
+    // }
+    // console.log("sending querry");
+    data = await songs.findOne(query);
+    if (data) {
+      console.log("data fetched!")
+    } else {
+      console.log("data not found DATA ", data)
+    }
+
+  } finally {
+    // Ensures that the client will close when you finish/error
+    client.close();
+    return data;
+  }
+}
+
+
+async function stream() {
+  console.log("QUEUE ", songIdQueue, "length ", songIdQueue.length)
+  if (isPlaying == true) {
+
+  } else {
+    try {
+      if (songIdQueue.length > 0) {
+        currentSongId = songIdQueue.pop();
+        console.log("Fetching songs")
+        songData = await fetchSongData(currentSongId);
+        try {
+          // fetching song
+          console.log("Fetching song data");
+
+          currentSongData = await fetchfile.getFileFromS3(process.env.AWS_SONG_BUCKET, songData.songKey);
+          currentAlbumCover = await fetchfile.getFileFromS3(process.env.AWS_COVER_BUCKET, songData.songAlbumCover
+            .replace("https://radiosalamonalbumcovers.s3.eu-north-1.amazonaws.com/", ''));
+          currentSongName = songData.songName;
+          currentAuthor = songData.songAuthor;
+          currentAlbum = songData.songAlbumName;
+
+        } catch (err) {
+          console.log("error2".err.message);
+        }
+
+      } else {
+        console.log("Current size of queue ", currentSongId.length, " Please add songs to queue ")
+        return { error: "empty queue" };
+      }
+    } catch (error) {
+      return console.error();
+    }
+    console.log("song name ", currentSongName, " songAuthor", currentAuthor, " song album cover data", currentAlbumCover);
+    data_res = { songName: currentSongName, songAuthor: currentAuthor, songAlbumCover: currentAlbumCover.Body, songAlbum: currentAlbum };
+  }
+  return data_res;
 }
 
 app.post('/add_song_to_queue', function (req, res) {
-    // TODO DS: maybe set max length of queue
-    songsQueue.push(req.body[0]);
-    coverQueue.push(req.body[1]);
-    res.sendStatus(200); 
+  // TODO DS: maybe set max length of queue
+  songIdQueue.push(req.body[0])
+  songsQueue.push(req.body[1]);
+  coverQueue.push(req.body[2]);
+  console.log("QUEUE AFTER ADD", songIdQueue)
+  res.sendStatus(200);
 })
 
+app.get('/stream', async (req, res) => {
+  const data = await stream().catch(console.dir);
+  console.log("RES data: ", data);
+  res.send({ result: data });
+  // res.send({ express: 'Internet Radio Salamon' }); 
+});
 
+app.get('/image', async (req, res) => {
+  console.log("IMAGE DATA: ", currentAlbumCover)
+  // let image = new Buffer(currentAlbumCover.Body).toString('base64');
+  // image = "data:" + currentAlbumCover.ContentType + ";base64," + image;
+  // let response = {
+  //   "statusCode": 200,
+  //   "headers": {
+  //     "Access-Control-Allow-Origin": "*",
+  //     'Content-Type': currentAlbumCover.ContentType
+  //   },
+  //   "body": image,
+  //   "isBase64Encoded": true
+  // };
+  res.writeHead(200, {'Content-Type': 'image/jpeg'});
+  res.write(currentAlbumCover.Body, 'binary');
+  res.end(null, 'binary');
+  res.send();
+  // res.send(response)
+  // res.send({ express: 'Internet Radio Salamon' }); 
+});
 
 app.get('/bucket_test', function (req, res) {
-    try{
-      fetchfile.getFileFromS3().then(data => {
-        console.log("output ", data);
-        res.send("S3 succ");
-      }).catch( (err) => {
-        console.log("error1". err);
-        res.send(err.message)
-      });
-    } catch (err){
-      console.log("error2". err.message);
-      res.send(err.message);
-    }
+  try {
+    fetchfile.getFileFromS3(process.env.AWS_SONG_BUCKET, "01. STARGAZING.mp3").then(data => {
+      console.log("output ", data);
+      res.send("S3 succ");
+    }).catch((err) => {
+      console.log("error1".err);
+      res.send(err.message)
+    });
+  } catch (err) {
+    console.log("error2".err.message);
+    res.send(err.message);
+  }
 })
 
 
-app.get('/express_backend', (req, res) => { //Line 9
-  res.send({ express: 'Internet Radio Salamon' }); //Line 10
-}); //Line 11
+app.get('/express_backend', (req, res) => {
+  res.send({ express: 'Internet Radio Salamon' });
+});
 
 
 app.get('/data', (req, res) => { //Line 9
