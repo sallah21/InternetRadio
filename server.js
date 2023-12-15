@@ -154,23 +154,10 @@ app.get('/stream', async (req, res) => {
 
 app.get('/image', async (req, res) => {
   console.log("IMAGE DATA: ", currentAlbumCover)
-  // let image = new Buffer(currentAlbumCover.Body).toString('base64');
-  // image = "data:" + currentAlbumCover.ContentType + ";base64," + image;
-  // let response = {
-  //   "statusCode": 200,
-  //   "headers": {
-  //     "Access-Control-Allow-Origin": "*",
-  //     'Content-Type': currentAlbumCover.ContentType
-  //   },
-  //   "body": image,
-  //   "isBase64Encoded": true
-  // };
   res.writeHead(200, {'Content-Type': 'image/jpeg'});
   res.write(currentAlbumCover.Body, 'binary');
   res.end(null, 'binary');
   res.send();
-  // res.send(response)
-  // res.send({ express: 'Internet Radio Salamon' }); 
 });
 
 app.get('/bucket_test', function (req, res) {
