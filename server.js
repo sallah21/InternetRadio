@@ -1,9 +1,11 @@
 require("dotenv").config();
 const express = require('express'); //Line 1 
 const bodyParser = require('body-parser');
+const Throttle = require('throttle');
 const app = express(); //Line 2
 const port = process.env.PORT || 5000; //Line 3
-
+const streamo = require('stream');
+app.use(express.static('public'));
 const fetchfile = require('./fetchFile');
 var jsonParser = bodyParser.json();
 app.use(jsonParser);
@@ -14,9 +16,10 @@ const { MongoClient, ObjectId } = require('mongodb');
 
 const client = new MongoClient(process.env.MONGODB_URI);
 
-var Buffer = require('buffer/').Buffer
 
-var songIdQueue = []
+
+var sinks = new Map; // list of currently listening users 
+var songIdQueue = [];
 var songsQueue = [];
 var coverQueue = [];
 var isPlaying = false;
@@ -78,11 +81,7 @@ async function fetchSongData(songId) {
     const id = new ObjectId(songId);
 
     const query = { _id: id }
-    // const options = {
-    //   sort: { "_id": 1 },
-    //   projection: { _id: 0, songName: 1, songAuthor: 1, songAlbumName: 1, songAlbumCover: 0, songData: 0 }
-    // }
-    // console.log("sending querry");
+
     data = await songs.findOne(query);
     if (data) {
       console.log("data fetched!")
@@ -97,11 +96,42 @@ async function fetchSongData(songId) {
   }
 }
 
+async function loadData() {
+  try {
+    if (songIdQueue.length > 0) {
+      currentSongId = songIdQueue.pop();
+      console.log("Fetching songs")
+      songData = await fetchSongData(currentSongId);
+      try {
+        // fetching song
+        console.log("Fetching song data");
+
+        currentSongData = await fetchfile.getFileFromS3(process.env.AWS_SONG_BUCKET, songData.songKey);
+        currentAlbumCover = await fetchfile.getFileFromS3(process.env.AWS_COVER_BUCKET, songData.songAlbumCover
+          .replace("https://radiosalamonalbumcovers.s3.eu-north-1.amazonaws.com/", ''));
+        currentSongName = songData.songName;
+        currentAuthor = songData.songAuthor;
+        currentAlbum = songData.songAlbumName;
+        console.log("song name after load in func ", currentSongName, " songAuthor", currentAuthor, " song album cover data", currentAlbumCover);
+      } catch (err) {
+        console.log("error2".err.message);
+      }
+
+    } else {
+      console.log("Current size of queue ", currentSongId.length, " Please add songs to queue ");
+      isPlaying = false;
+      return { error: "empty queue" };
+    }
+  } catch (error) {
+    return console.error();
+  }
+}
 
 async function stream() {
   console.log("QUEUE ", songIdQueue, "length ", songIdQueue.length)
+  console.log("is playing ?", isPlaying)
   if (isPlaying == true) {
-
+    data_res = { songName: currentSongName, songAuthor: currentAuthor, songAlbumCover: currentAlbumCover.Body, songAlbum: currentAlbum };
   } else {
     try {
       if (songIdQueue.length > 0) {
@@ -118,22 +148,49 @@ async function stream() {
           currentSongName = songData.songName;
           currentAuthor = songData.songAuthor;
           currentAlbum = songData.songAlbumName;
-
+          console.log("song name after load in func ", currentSongName, " songAuthor", currentAuthor, " song album cover data", currentAlbumCover);
         } catch (err) {
           console.log("error2".err.message);
         }
 
       } else {
-        console.log("Current size of queue ", currentSongId.length, " Please add songs to queue ")
+        console.log("Current size of queue ", currentSongId.length, " Please add songs to queue ");
+        isPlaying = false;
         return { error: "empty queue" };
       }
     } catch (error) {
       return console.error();
     }
-    console.log("song name ", currentSongName, " songAuthor", currentAuthor, " song album cover data", currentAlbumCover);
-    data_res = { songName: currentSongName, songAuthor: currentAuthor, songAlbumCover: currentAlbumCover.Body, songAlbum: currentAlbum };
+    console.log("song name after load ", currentSongName, " songAuthor", currentAuthor, " song album cover data", currentAlbumCover);
+    data_res = { songName: currentSongName, songAuthor: currentAuthor, songAlbum: currentAlbum };
+    playAudio();
+    isPlaying = true;
   }
   return data_res;
+}
+
+const sendToEveryone = (chunk) => {
+  for (let [id, stream] of sinks) {
+    // console.log("chunk", chunk)
+    stream.write(chunk);
+  }
+}
+const playAudio = async () => {
+  bitRate = 640*1000;
+  const throttle = new Throttle(bitRate / 8);
+  const strim = streamo.Readable.from(currentSongData.Body);
+  strim.pipe(throttle)
+  throttle.on('data', (chunk) => {
+    sendToEveryone(chunk)
+  });
+  throttle.on('error', (e) => console.log(e));
+}
+
+const CreateStream = () => {
+  const id = sinks.length;
+  const stream = new streamo.PassThrough();
+  sinks.set(id, stream);
+  return { id, stream };
 }
 
 app.post('/add_song_to_queue', function (req, res) {
@@ -152,9 +209,18 @@ app.get('/stream', async (req, res) => {
   // res.send({ express: 'Internet Radio Salamon' }); 
 });
 
+app.get('/audioStream', async (req, res) => {
+  const { id, stream } = CreateStream() // We create a new stream for each new client
+  res.setHeader("Content-Type", "audio/mp3")
+  
+  stream.pipe(res)
+  res.on('close', () => { sinks.delete(id) })
+  // res.send({ express: 'Internet Radio Salamon' }); 
+});
+
 app.get('/image', async (req, res) => {
   console.log("IMAGE DATA: ", currentAlbumCover)
-  res.writeHead(200, {'Content-Type': 'image/jpeg'});
+  res.writeHead(200, { 'Content-Type': 'image/jpeg' });
   res.write(currentAlbumCover.Body, 'binary');
   res.end(null, 'binary');
   res.send();

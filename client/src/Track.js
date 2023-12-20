@@ -8,12 +8,10 @@ class Track extends Component {
         trackName: 'Track name',
         trackAuthor: 'Track author',
         trackAlbum: 'Track album',
-        trackImg: trackimg
+        trackImg: trackimg,
+        audioSrc: ''
     };
 
-    crateImg(data) {
-
-    }
     startPlayingMusic() {
         axios.get('/stream').then(res => {
             console.log(res.data.result);
@@ -22,11 +20,11 @@ class Track extends Component {
                 throw Error(res.message);
             }
 
-            this.setState({ trackName: q_result.songName, trackAuthor: q_result.songAuthor, trackAlbum: q_result.songAlbum,trackImg: '/image'});
+            this.setState({ trackName: q_result.songName, trackAuthor: q_result.songAuthor, trackAlbum: q_result.songAlbum, trackImg: '/image' });
 
         }
         );
-
+        this.setState({ audioSrc: '/audioStream' });
     }
     render() {
         return (
@@ -35,7 +33,7 @@ class Track extends Component {
                 <p className='trackAuthor'>{this.state.trackAuthor}</p>
                 <p className='trackAlbum'>{this.state.trackAlbum}</p>
                 <img className='trackImg' src={this.state.trackImg} alt="track image"></img>
-                <p><audio src='/stream' >   Your browser does not support the audio element.</audio></p>
+                <p><audio src='/audioStream' type="audio/mp3" preload="none" controls autoPlay>   Your browser does not support the audio element.</audio></p>
                 <p><button className='playButton' onClick={() => this.startPlayingMusic()}>Play</button></p>
             </div>
         );

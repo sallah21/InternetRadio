@@ -15,7 +15,7 @@ AWS.config.update({
 const S3 = new AWS.S3();
 module.exports = {
     getFileFromS3: (bucketName, objectKey) => {
-      console.log("bucket". bucketName," key ", objectKey );
+      console.log("bucket", bucketName," key ", objectKey );
       return new Promise( (resolve,reject) => {
   
         try {
