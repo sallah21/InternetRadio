@@ -13,9 +13,9 @@ state = {
   };
 
   componentDidMount() {
-    this.callBackendAPI()
-      .then(res => this.setState({ title: res.title, desc: res.desc}))
-      .catch(err => console.log(err));
+    // this.callBackendAPI()
+    //   .then(res => this.setState({ title: res.title, desc: res.desc}))
+    //   .catch(err => console.log(err));
   }
     // fetching the GET route from the Express server which matches the GET route from server.js
   callBackendAPI = async () => {
@@ -31,8 +31,8 @@ state = {
   render() {
     return (
       <div className="App">
-        <p className="App-title">{this.state.title}</p>
-        <p className="App-desc">{this.state.desc}</p>
+        {/* <p className="App-title">{this.state.title}</p>
+        <p className="App-desc">{this.state.desc}</p> */}
         {sessionStorage.getItem("isLogged") && <div><Top></Top><Player></Player> <Dashboard/></div>}
         {!sessionStorage.getItem("isLogged") && <div><Top></Top><Player></Player></div>}
 

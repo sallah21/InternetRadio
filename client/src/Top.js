@@ -25,7 +25,7 @@ class Top extends Component {
                     this.setState({isLogged: false, userName: null});
 
                 }
-            
+
             }
         );
   }

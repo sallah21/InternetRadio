@@ -2,7 +2,6 @@
 import React, { Component } from 'react';
 import axios from 'axios';
 
-  // TODO DS : playlist logic and creating
   function addToQueue(songData, songCover) {
     try {
         axios.post('/add_song_to_queue', [songData,songCover]).then( (res) => {
